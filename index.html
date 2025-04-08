@@ -315,21 +315,26 @@
     <!-- 메시지 박스 -->
     <div id="message-box"></div>
 
-    <!-- 디버깅 스크립트 -->
+    <!-- 전역 변수 초기화 -->
     <script>
-        console.log('페이지 로드 시작');
+        // 전역 변수 초기화
+        window.MemoryStorage = {
+            db: null,
+            session: null
+        };
+        
+        window.Security = {
+            session: null,
+            config: {
+                sessionTimeout: 30 * 60 * 1000 // 30분
+            }
+        };
         
         // 전역 오류 핸들러
         window.onerror = function(message, source, lineno, colno, error) {
             console.error('전역 오류 발생:', message, 'at', source, lineno, colno, error);
             return false;
         };
-        
-        // 페이지 로드 완료 핸들러
-        window.addEventListener('load', function() {
-            console.log('페이지 로드 완료');
-            console.log('메모리 저장소 상태:', window.MemoryStorage);
-        });
     </script>
 
     <!-- Custom JavaScript -->
@@ -343,29 +348,48 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             console.log('DOM 로드 완료');
+            console.log('초기 메모리 저장소 상태:', window.MemoryStorage);
             
             // 데이터베이스 초기화
             if (typeof initDB === 'function') {
                 console.log('데이터베이스 초기화 시작');
-                initDB();
-                console.log('데이터베이스 초기화 완료');
+                try {
+                    initDB();
+                    console.log('데이터베이스 초기화 완료:', {
+                        hasDB: !!window.MemoryStorage.db,
+                        hasUsers: !!window.MemoryStorage.db?.users,
+                        userCount: window.MemoryStorage.db?.users?.length || 0
+                    });
+                } catch (error) {
+                    console.error('데이터베이스 초기화 중 오류 발생:', error);
+                }
             }
             
             // 세션 확인
-            if (MemoryStorage.session) {
-                console.log('기존 세션 발견:', MemoryStorage.session);
-                Security.session = MemoryStorage.session;
-                if (Security.session.expires > Date.now()) {
-                    document.getElementById('loginModal').style.display = 'none';
-                    document.querySelector('main').style.display = 'block';
+            const loginModal = document.getElementById('loginModal');
+            const mainContent = document.querySelector('main');
+            
+            if (window.MemoryStorage.session) {
+                console.log('기존 세션 발견:', {
+                    token: window.MemoryStorage.session.token,
+                    expires: new Date(window.MemoryStorage.session.expires).toISOString(),
+                    user: window.MemoryStorage.session.user
+                });
+                
+                window.Security.session = window.MemoryStorage.session;
+                if (window.Security.session.expires > Date.now()) {
+                    if (loginModal) loginModal.style.display = 'none';
+                    if (mainContent) mainContent.style.display = 'block';
                 } else {
                     console.log('세션 만료됨');
-                    logout();
+                    if (typeof logout === 'function') {
+                        logout();
+                    }
                 }
             } else {
                 console.log('세션 없음');
-                document.getElementById('loginModal').style.display = 'flex';
-                document.querySelector('main').style.display = 'none';
+                if (loginModal) loginModal.style.display = 'flex';
+                if (mainContent) mainContent.style.display = 'none';
             }
         });
     </script>

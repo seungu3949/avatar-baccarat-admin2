@@ -15,11 +15,13 @@ const Database = {
     }
 };
 
-// 메모리 기반 저장소
-const MemoryStorage = {
-    db: null,
-    session: null
-};
+// 메모리 기반 저장소 초기화
+if (typeof window !== 'undefined') {
+    window.MemoryStorage = window.MemoryStorage || {
+        db: null,
+        session: null
+    };
+}
 
 // 초기 데이터
 const initialData = {

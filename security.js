@@ -1,3 +1,33 @@
+// 보안 설정 초기화
+if (typeof window !== 'undefined') {
+    window.Security = window.Security || {
+        // 세션 관리
+        session: null,
+        
+        // 권한 정의
+        roles: {
+            admin: ['view', 'edit', 'delete', 'manage_users', 'manage_settings'],
+            manager: ['view', 'edit', 'manage_users'],
+            operator: ['view', 'edit']
+        },
+        
+        // IP 화이트리스트
+        ipWhitelist: ['127.0.0.1', 'localhost'],
+        
+        // 로그인 시도 제한
+        loginAttempts: {},
+        
+        // 보안 설정
+        config: {
+            maxLoginAttempts: 5,
+            sessionTimeout: 30 * 60 * 1000, // 30분
+            minPasswordLength: 8,
+            requireSpecialChar: true
+        }
+    };
+}
+
+// 권한 체크 함수
 // 보안 설정
 const Security = {
     // 세션 관리
