@@ -1,0 +1,119 @@
+/* 기본 폰트 설정 */
+@font-face {
+    font-family: 'LucideIcons';
+    src: url('https://cdn.jsdelivr.net/npm/lucide-static@latest/font/Lucide.ttf') format('truetype');
+}
+
+/* 아이콘 스타일 */
+.lucide {
+    font-family: 'LucideIcons';
+    font-style: normal;
+    font-weight: normal;
+    font-variant: normal;
+    text-rendering: auto;
+    line-height: 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+/* 아이콘 코드 매핑 */
+.icon-shuffle::before { content: '\e4a8'; }
+.icon-play::before { content: '\e038'; }
+.icon-pause::before { content: '\e031'; }
+.icon-stop-circle::before { content: '\e4b5'; }
+.icon-check-circle::before { content: '\e132'; }
+.icon-settings::before { content: '\e051'; }
+.icon-users::before { content: '\e06d'; }
+.icon-user-plus::before { content: '\e06c'; }
+.icon-user-minus::before { content: '\e06b'; }
+.icon-trash::before { content: '\e05e'; }
+.icon-edit::before { content: '\e021'; }
+.icon-eye::before { content: '\e024'; }
+.icon-eye-off::before { content: '\e025'; }
+.icon-ban::before { content: '\e100'; }
+.icon-circle-dollar::before { content: '\e140'; }
+
+/* 메시지 박스 스타일 */
+#message-box {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    background-color: #10b981;
+    color: white;
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out;
+    z-index: 1000;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+#message-box.show {
+    opacity: 1;
+}
+
+#message-box.error {
+    background-color: #ef4444;
+}
+
+/* 다크모드 스타일 */
+.dark .bg-white {
+    background-color: #1f2937;
+}
+
+.dark .text-gray-800 {
+    color: #f3f4f6;
+}
+
+.dark .text-gray-700 {
+    color: #e5e7eb;
+}
+
+.dark .text-gray-500 {
+    color: #9ca3af;
+}
+
+.dark .border-gray-200 {
+    border-color: #374151;
+}
+
+.dark .bg-gray-50 {
+    background-color: #111827;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 640px) {
+    .grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .p-4 {
+        padding: 1rem;
+    }
+    
+    .text-3xl {
+        font-size: 1.5rem;
+    }
+}
+
+/* 애니메이션 효과 */
+.transition-all {
+    transition-property: all;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
+}
+
+/* 버튼 호버 효과 */
+button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* 입력 필드 포커스 효과 */
+input:focus, select:focus {
+    outline: none;
+    ring: 2px;
+    ring-color: #3b82f6;
+} 
