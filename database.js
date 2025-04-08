@@ -60,43 +60,70 @@ function initDB() {
     try {
         // 메모리 기반 저장소 초기화
         if (!MemoryStorage.db) {
-            MemoryStorage.db = { ...initialData };
-            console.log('메모리 기반 데이터베이스 생성:', MemoryStorage.db);
+            console.log('새로운 데이터베이스 생성');
+            MemoryStorage.db = JSON.parse(JSON.stringify(initialData));
         } else {
-            console.log('기존 데이터베이스 사용:', MemoryStorage.db);
+            console.log('기존 데이터베이스 사용');
         }
         
-        // 사용자 데이터 확인
-        if (!MemoryStorage.db.users || MemoryStorage.db.users.length === 0) {
-            console.log('사용자 데이터가 없어 초기 데이터로 복구');
-            MemoryStorage.db.users = [...initialData.users];
+        // 사용자 데이터 확인 및 복구
+        if (!MemoryStorage.db.users || !Array.isArray(MemoryStorage.db.users) || MemoryStorage.db.users.length === 0) {
+            console.log('사용자 데이터 복구');
+            MemoryStorage.db.users = JSON.parse(JSON.stringify(initialData.users));
         }
         
-        console.log('데이터베이스 초기화 완료');
+        console.log('데이터베이스 초기화 완료:', {
+            hasDB: !!MemoryStorage.db,
+            hasUsers: !!MemoryStorage.db?.users,
+            userCount: MemoryStorage.db?.users?.length || 0
+        });
+        
         return MemoryStorage.db;
     } catch (error) {
         console.error('데이터베이스 초기화 중 오류 발생:', error);
-        return initialData;
+        // 오류 발생 시 초기 데이터로 복구
+        MemoryStorage.db = JSON.parse(JSON.stringify(initialData));
+        return MemoryStorage.db;
     }
 }
 
-// 데이터베이스 조회
-function getDB(table) {
+// 데이터베이스 가져오기
+function getDB(tableName) {
     try {
-        return MemoryStorage.db?.[table] || [];
+        if (!MemoryStorage.db) {
+            console.log('데이터베이스가 없어 초기화 시도');
+            initDB();
+        }
+        
+        if (tableName) {
+            return MemoryStorage.db[tableName] || [];
+        }
+        return MemoryStorage.db;
     } catch (error) {
         console.error('데이터베이스 조회 중 오류 발생:', error);
-        return [];
+        return tableName ? [] : initialData;
     }
 }
 
 // 데이터베이스 업데이트
-function updateDB(table, data) {
+function updateDB(tableName, data) {
     try {
-        if (!MemoryStorage.db[table]) {
-            MemoryStorage.db[table] = [];
+        if (!MemoryStorage.db) {
+            console.log('데이터베이스가 없어 초기화 시도');
+            initDB();
         }
-        MemoryStorage.db[table].push(data);
+        
+        if (tableName) {
+            MemoryStorage.db[tableName] = data;
+        } else {
+            MemoryStorage.db = data;
+        }
+        
+        console.log('데이터베이스 업데이트 완료:', {
+            tableName,
+            dataLength: Array.isArray(data) ? data.length : 'object'
+        });
+        
         return true;
     } catch (error) {
         console.error('데이터베이스 업데이트 중 오류 발생:', error);

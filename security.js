@@ -40,16 +40,32 @@ function login(username, password) {
     console.log('로그인 시도:', username);
     
     try {
-        const db = getDB('users');
-        console.log('데이터베이스:', db);
+        // 데이터베이스 초기화 확인
+        if (!MemoryStorage.db) {
+            console.log('데이터베이스가 초기화되지 않음, 초기화 시도');
+            initDB();
+        }
         
-        if (!db || !db.length) {
+        const db = getDB('users');
+        console.log('데이터베이스 상태:', {
+            hasDB: !!MemoryStorage.db,
+            hasUsers: !!db,
+            userCount: db?.length || 0,
+            users: db?.map(u => ({ id: u.id, username: u.username, role: u.role }))
+        });
+        
+        if (!db || !Array.isArray(db) || db.length === 0) {
+            console.error('사용자 데이터베이스가 비어있음');
             showMessage('데이터베이스 초기화가 필요합니다.', 'error');
             return false;
         }
         
         const user = db.find(u => u.username === username && u.password === password);
-        console.log('찾은 사용자:', user);
+        console.log('사용자 검색 결과:', user ? {
+            id: user.id,
+            username: user.username,
+            role: user.role
+        } : '사용자를 찾을 수 없음');
         
         if (user) {
             // 로그인 성공
@@ -67,11 +83,18 @@ function login(username, password) {
             MemoryStorage.session = session;
             Security.session = session;
             
-            // 로그인 모달 숨기기
-            document.getElementById('loginModal').style.display = 'none';
+            console.log('세션 생성됨:', {
+                token: session.token,
+                expires: new Date(session.expires).toISOString(),
+                user: session.user
+            });
             
-            // 메인 컨텐츠 표시
-            document.querySelector('main').style.display = 'block';
+            // 로그인 모달 숨기기
+            const loginModal = document.getElementById('loginModal');
+            const mainContent = document.querySelector('main');
+            
+            if (loginModal) loginModal.style.display = 'none';
+            if (mainContent) mainContent.style.display = 'block';
             
             // 로그 기록
             logActivity('login', `사용자 ${username} 로그인`);
@@ -86,10 +109,12 @@ function login(username, password) {
                 initStatistics();
             }
             
+            showMessage('로그인 성공');
             return true;
         }
         
         // 로그인 실패
+        console.log('로그인 실패: 사용자명 또는 비밀번호가 올바르지 않음');
         showMessage('로그인 실패: 사용자명 또는 비밀번호가 올바르지 않습니다.', 'error');
         return false;
     } catch (error) {
