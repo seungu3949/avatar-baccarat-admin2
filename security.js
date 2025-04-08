@@ -40,15 +40,15 @@ function login(username, password) {
     console.log('로그인 시도:', username);
     
     try {
-        const db = JSON.parse(localStorage.getItem('avatarBaccaratDB')) || window.tempDB;
+        const db = getDB('users');
         console.log('데이터베이스:', db);
         
-        if (!db || !db.users) {
+        if (!db || !db.length) {
             showMessage('데이터베이스 초기화가 필요합니다.', 'error');
             return false;
         }
         
-        const user = db.users.find(u => u.username === username && u.password === password);
+        const user = db.find(u => u.username === username && u.password === password);
         console.log('찾은 사용자:', user);
         
         if (user) {
@@ -63,15 +63,8 @@ function login(username, password) {
                 }
             };
             
-            try {
-                // 세션 저장
-                localStorage.setItem('session', JSON.stringify(session));
-            } catch (e) {
-                console.error('로컬 스토리지 저장 실패:', e);
-                // 로컬 스토리지 저장 실패 시 메모리에 저장
-                window.tempSession = session;
-            }
-            
+            // 세션 저장
+            MemoryStorage.session = session;
             Security.session = session;
             
             // 로그인 모달 숨기기
@@ -110,6 +103,9 @@ function login(username, password) {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM 로드됨'); // 디버깅용
     
+    // 초기 상태 로깅
+    console.log('메모리 저장소 상태:', MemoryStorage);
+    
     const loginForm = document.getElementById('loginForm');
     console.log('로그인 폼:', loginForm); // 디버깅용
     
@@ -118,23 +114,38 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             console.log('폼 제출됨'); // 디버깅용
             
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-            console.log('입력된 값:', { username, password }); // 디버깅용
-            
-            login(username, password);
+            try {
+                const usernameInput = document.getElementById('username');
+                const passwordInput = document.getElementById('password');
+                
+                if (!usernameInput || !passwordInput) {
+                    console.error('로그인 입력 필드를 찾을 수 없습니다.');
+                    showMessage('로그인 양식 오류가 발생했습니다.', true);
+                    return;
+                }
+                
+                const username = usernameInput.value;
+                const password = passwordInput.value;
+                console.log('입력된 값:', { username }); // 비밀번호는 로깅하지 않음
+                
+                login(username, password);
+            } catch (error) {
+                console.error('로그인 처리 중 오류 발생:', error);
+                showMessage('로그인 중 오류가 발생했습니다.', true);
+            }
         });
     } else {
         console.error('로그인 폼을 찾을 수 없습니다.'); // 디버깅용
     }
     
     // 데이터베이스 초기화
+    console.log('데이터베이스 초기화 호출');
     initDB();
+    console.log('초기화 후 데이터베이스 상태:', MemoryStorage.db);
     
     // 세션 확인
-    const savedSession = localStorage.getItem('session');
-    if (savedSession) {
-        Security.session = JSON.parse(savedSession);
+    if (MemoryStorage.session) {
+        Security.session = MemoryStorage.session;
         if (Security.session.expires > Date.now()) {
             // 유효한 세션이 있으면 메인 컨텐츠 표시
             document.getElementById('loginModal').style.display = 'none';
@@ -158,11 +169,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // 로그아웃 함수
 function logout() {
-    if (Security.session.user) {
+    if (Security.session?.user) {
         logActivity('logout', `사용자 ${Security.session.user.username} 로그아웃`, Security.session.user.id);
     }
     Security.session = null;
-    localStorage.removeItem('session');
+    MemoryStorage.session = null;
 }
 
 // 토큰 생성 함수
@@ -174,12 +185,7 @@ function generateToken() {
 function checkSession() {
     try {
         if (!Security.session) {
-            const savedSession = localStorage.getItem('session');
-            if (savedSession) {
-                Security.session = JSON.parse(savedSession);
-            } else if (window.tempSession) {
-                Security.session = window.tempSession;
-            }
+            Security.session = MemoryStorage.session;
         }
         
         if (!Security.session || !Security.session.token || !Security.session.expires) {
@@ -225,12 +231,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(checkSession, 60000); // 1분마다 체크
     
     // 페이지 새로고침 시 세션 복원
-    if (localStorage.getItem('session')) {
-        Security.session = JSON.parse(localStorage.getItem('session'));
+    if (MemoryStorage.session) {
+        Security.session = MemoryStorage.session;
     }
-    
-    // 페이지 종료 시 세션 저장
-    window.addEventListener('beforeunload', () => {
-        localStorage.setItem('session', JSON.stringify(Security.session));
-    });
 }); 

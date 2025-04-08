@@ -197,10 +197,9 @@ function deleteUser(userId) {
 }
 
 // 로그아웃 함수
-function logout() {
-    // 세션 초기화
-    Security.session = null;
-    localStorage.removeItem('session');
+function handleLogout() {
+    // 보안 모듈의 로그아웃 함수 호출
+    logout();
     
     // 로그인 모달 표시
     document.getElementById('loginModal').style.display = 'flex';
@@ -214,12 +213,12 @@ function logout() {
     }
     
     // 메시지 표시
-    showMessage('로그아웃되었습니다.', 'success');
+    showMessage('로그아웃되었습니다.');
 }
 
 // 로그아웃 버튼 이벤트 리스너
 document.getElementById('logoutBtn').addEventListener('click', function() {
-    logout();
+    handleLogout();
 });
 
 // 이벤트 리스너 등록

@@ -12,6 +12,14 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Custom CSS -->
     <link rel="stylesheet" href="styles.css">
+    <!-- 디버깅 스크립트 -->
+    <script>
+        console.log('페이지 초기화 시작');
+        window.onerror = function(message, source, lineno, colno, error) {
+            console.error('전역 오류 발생:', message, 'at', source, lineno, colno, error);
+            return false;
+        };
+    </script>
     <style>
       @font-face {
         font-family: 'LucideIcons';
@@ -127,7 +135,7 @@
         </header>
 
         <!-- 대시보드 -->
-        <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8" style="display: none;">
             <!-- 실시간 모니터링 -->
             <div id="dashboard" class="mb-8"></div>
 
@@ -307,11 +315,59 @@
     <!-- 메시지 박스 -->
     <div id="message-box"></div>
 
+    <!-- 디버깅 스크립트 -->
+    <script>
+        console.log('페이지 로드 시작');
+        
+        // 전역 오류 핸들러
+        window.onerror = function(message, source, lineno, colno, error) {
+            console.error('전역 오류 발생:', message, 'at', source, lineno, colno, error);
+            return false;
+        };
+        
+        // 페이지 로드 완료 핸들러
+        window.addEventListener('load', function() {
+            console.log('페이지 로드 완료');
+            console.log('메모리 저장소 상태:', window.MemoryStorage);
+        });
+    </script>
+
     <!-- Custom JavaScript -->
     <script src="database.js"></script>
     <script src="security.js"></script>
     <script src="monitoring.js"></script>
     <script src="statistics.js"></script>
     <script src="script.js"></script>
+    
+    <!-- 초기화 스크립트 -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM 로드 완료');
+            
+            // 데이터베이스 초기화
+            if (typeof initDB === 'function') {
+                console.log('데이터베이스 초기화 시작');
+                initDB();
+                console.log('데이터베이스 초기화 완료');
+            }
+            
+            // 세션 확인
+            if (MemoryStorage.session) {
+                console.log('기존 세션 발견:', MemoryStorage.session);
+                Security.session = MemoryStorage.session;
+                if (Security.session.expires > Date.now()) {
+                    document.getElementById('loginModal').style.display = 'none';
+                    document.querySelector('main').style.display = 'block';
+                } else {
+                    console.log('세션 만료됨');
+                    logout();
+                }
+            } else {
+                console.log('세션 없음');
+                document.getElementById('loginModal').style.display = 'flex';
+                document.querySelector('main').style.display = 'none';
+            }
+        });
+    </script>
 </body>
 </html>

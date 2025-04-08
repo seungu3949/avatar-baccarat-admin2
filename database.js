@@ -15,6 +15,12 @@ const Database = {
     }
 };
 
+// 메모리 기반 저장소
+const MemoryStorage = {
+    db: null,
+    session: null
+};
+
 // 초기 데이터
 const initialData = {
     users: [
@@ -23,6 +29,14 @@ const initialData = {
             username: 'admin',
             password: 'admin123',
             role: 'admin',
+            status: 'active',
+            lastLogin: null
+        },
+        {
+            id: 2,
+            username: 'manager',
+            password: 'manager123',
+            role: 'manager',
             status: 'active',
             lastLogin: null
         }
@@ -44,73 +58,49 @@ function initDB() {
     console.log('데이터베이스 초기화 시작');
     
     try {
-        // 로컬 스토리지에서 데이터베이스 가져오기
-        let db = localStorage.getItem('avatarBaccaratDB');
-        
-        if (!db) {
-            console.log('새로운 데이터베이스 생성');
-            // 데이터베이스가 없으면 초기 데이터로 생성
-            db = JSON.stringify(initialData);
-            try {
-                localStorage.setItem('avatarBaccaratDB', db);
-            } catch (e) {
-                console.error('로컬 스토리지 저장 실패:', e);
-                // 로컬 스토리지 저장 실패 시 메모리에 저장
-                window.tempDB = initialData;
-            }
+        // 메모리 기반 저장소 초기화
+        if (!MemoryStorage.db) {
+            MemoryStorage.db = { ...initialData };
+            console.log('메모리 기반 데이터베이스 생성:', MemoryStorage.db);
         } else {
-            console.log('기존 데이터베이스 사용');
-            try {
-                const parsedDB = JSON.parse(db);
-                if (!parsedDB.users || !parsedDB.users.length) {
-                    console.log('사용자 데이터가 없어 초기화');
-                    parsedDB.users = initialData.users;
-                    db = JSON.stringify(parsedDB);
-                    try {
-                        localStorage.setItem('avatarBaccaratDB', db);
-                    } catch (e) {
-                        console.error('로컬 스토리지 업데이트 실패:', e);
-                        window.tempDB = parsedDB;
-                    }
-                }
-            } catch (error) {
-                console.error('데이터베이스 파싱 오류:', error);
-                db = JSON.stringify(initialData);
-                try {
-                    localStorage.setItem('avatarBaccaratDB', db);
-                } catch (e) {
-                    console.error('로컬 스토리지 재설정 실패:', e);
-                    window.tempDB = initialData;
-                }
-            }
+            console.log('기존 데이터베이스 사용:', MemoryStorage.db);
+        }
+        
+        // 사용자 데이터 확인
+        if (!MemoryStorage.db.users || MemoryStorage.db.users.length === 0) {
+            console.log('사용자 데이터가 없어 초기 데이터로 복구');
+            MemoryStorage.db.users = [...initialData.users];
         }
         
         console.log('데이터베이스 초기화 완료');
-        return JSON.parse(db);
+        return MemoryStorage.db;
     } catch (error) {
         console.error('데이터베이스 초기화 중 오류 발생:', error);
         return initialData;
     }
 }
 
-// 데이터베이스 업데이트
-function updateDB(table, data) {
-    const db = JSON.parse(localStorage.getItem('avatarBaccaratDB'));
-    if (!db[table]) {
-        db[table] = [];
-    }
-    db[table].push(data);
-    localStorage.setItem('avatarBaccaratDB', JSON.stringify(db));
-}
-
 // 데이터베이스 조회
 function getDB(table) {
     try {
-        const db = JSON.parse(localStorage.getItem('avatarBaccaratDB')) || window.tempDB;
-        return db[table] || [];
+        return MemoryStorage.db?.[table] || [];
     } catch (error) {
         console.error('데이터베이스 조회 중 오류 발생:', error);
-        return window.tempDB?.[table] || [];
+        return [];
+    }
+}
+
+// 데이터베이스 업데이트
+function updateDB(table, data) {
+    try {
+        if (!MemoryStorage.db[table]) {
+            MemoryStorage.db[table] = [];
+        }
+        MemoryStorage.db[table].push(data);
+        return true;
+    } catch (error) {
+        console.error('데이터베이스 업데이트 중 오류 발생:', error);
+        return false;
     }
 }
 
@@ -138,9 +128,20 @@ function detectAnomaly(type, description, severity = 'medium') {
 
 // 통계 업데이트
 function updateStatistics(timeframe, data) {
-    const db = JSON.parse(localStorage.getItem('avatarBaccaratDB'));
-    db.statistics[timeframe] = data;
-    localStorage.setItem('avatarBaccaratDB', JSON.stringify(db));
+    try {
+        if (!MemoryStorage.db.statistics) {
+            MemoryStorage.db.statistics = {
+                daily: {},
+                weekly: {},
+                monthly: {}
+            };
+        }
+        MemoryStorage.db.statistics[timeframe] = data;
+        return true;
+    } catch (error) {
+        console.error('통계 업데이트 중 오류 발생:', error);
+        return false;
+    }
 }
 
 // 페이지 로드 시 데이터베이스 초기화
