@@ -41,39 +41,56 @@ const initialData = {
 
 // 데이터베이스 초기화
 function initDB() {
-    console.log('데이터베이스 초기화 시작'); // 디버깅용
+    console.log('데이터베이스 초기화 시작');
     
-    // 로컬 스토리지에서 데이터베이스 가져오기
-    let db = localStorage.getItem('avatarBaccaratDB');
-    console.log('로컬 스토리지 데이터:', db); // 디버깅용
-    
-    if (!db) {
-        console.log('새로운 데이터베이스 생성'); // 디버깅용
-        // 데이터베이스가 없으면 초기 데이터로 생성
-        db = JSON.stringify(initialData);
-        localStorage.setItem('avatarBaccaratDB', db);
-    } else {
-        console.log('기존 데이터베이스 사용'); // 디버깅용
-        // 기존 데이터베이스 확인
-        try {
-            const parsedDB = JSON.parse(db);
-            if (!parsedDB.users || !parsedDB.users.length) {
-                console.log('사용자 데이터가 없어 초기화'); // 디버깅용
-                // 사용자 데이터가 없으면 초기화
-                parsedDB.users = initialData.users;
-                db = JSON.stringify(parsedDB);
-                localStorage.setItem('avatarBaccaratDB', db);
-            }
-        } catch (error) {
-            console.error('데이터베이스 파싱 오류:', error); // 디버깅용
-            // 데이터베이스가 손상되었으면 초기화
+    try {
+        // 로컬 스토리지에서 데이터베이스 가져오기
+        let db = localStorage.getItem('avatarBaccaratDB');
+        
+        if (!db) {
+            console.log('새로운 데이터베이스 생성');
+            // 데이터베이스가 없으면 초기 데이터로 생성
             db = JSON.stringify(initialData);
-            localStorage.setItem('avatarBaccaratDB', db);
+            try {
+                localStorage.setItem('avatarBaccaratDB', db);
+            } catch (e) {
+                console.error('로컬 스토리지 저장 실패:', e);
+                // 로컬 스토리지 저장 실패 시 메모리에 저장
+                window.tempDB = initialData;
+            }
+        } else {
+            console.log('기존 데이터베이스 사용');
+            try {
+                const parsedDB = JSON.parse(db);
+                if (!parsedDB.users || !parsedDB.users.length) {
+                    console.log('사용자 데이터가 없어 초기화');
+                    parsedDB.users = initialData.users;
+                    db = JSON.stringify(parsedDB);
+                    try {
+                        localStorage.setItem('avatarBaccaratDB', db);
+                    } catch (e) {
+                        console.error('로컬 스토리지 업데이트 실패:', e);
+                        window.tempDB = parsedDB;
+                    }
+                }
+            } catch (error) {
+                console.error('데이터베이스 파싱 오류:', error);
+                db = JSON.stringify(initialData);
+                try {
+                    localStorage.setItem('avatarBaccaratDB', db);
+                } catch (e) {
+                    console.error('로컬 스토리지 재설정 실패:', e);
+                    window.tempDB = initialData;
+                }
+            }
         }
+        
+        console.log('데이터베이스 초기화 완료');
+        return JSON.parse(db);
+    } catch (error) {
+        console.error('데이터베이스 초기화 중 오류 발생:', error);
+        return initialData;
     }
-    
-    console.log('데이터베이스 초기화 완료'); // 디버깅용
-    return JSON.parse(db);
 }
 
 // 데이터베이스 업데이트
@@ -88,8 +105,13 @@ function updateDB(table, data) {
 
 // 데이터베이스 조회
 function getDB(table) {
-    const db = JSON.parse(localStorage.getItem('avatarBaccaratDB'));
-    return db[table] || [];
+    try {
+        const db = JSON.parse(localStorage.getItem('avatarBaccaratDB')) || window.tempDB;
+        return db[table] || [];
+    } catch (error) {
+        console.error('데이터베이스 조회 중 오류 발생:', error);
+        return window.tempDB?.[table] || [];
+    }
 }
 
 // 활동 로그 기록

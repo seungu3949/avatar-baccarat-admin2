@@ -37,59 +37,73 @@ function checkPermission(permission) {
 
 // 로그인 함수
 function login(username, password) {
-    console.log('로그인 시도:', username); // 디버깅용
+    console.log('로그인 시도:', username);
     
-    const db = JSON.parse(localStorage.getItem('avatarBaccaratDB'));
-    console.log('데이터베이스:', db); // 디버깅용
-    
-    if (!db || !db.users) {
-        showMessage('데이터베이스 초기화가 필요합니다.', 'error');
+    try {
+        const db = JSON.parse(localStorage.getItem('avatarBaccaratDB')) || window.tempDB;
+        console.log('데이터베이스:', db);
+        
+        if (!db || !db.users) {
+            showMessage('데이터베이스 초기화가 필요합니다.', 'error');
+            return false;
+        }
+        
+        const user = db.users.find(u => u.username === username && u.password === password);
+        console.log('찾은 사용자:', user);
+        
+        if (user) {
+            // 로그인 성공
+            const session = {
+                token: generateToken(),
+                expires: Date.now() + Security.config.sessionTimeout,
+                user: {
+                    id: user.id,
+                    username: user.username,
+                    role: user.role
+                }
+            };
+            
+            try {
+                // 세션 저장
+                localStorage.setItem('session', JSON.stringify(session));
+            } catch (e) {
+                console.error('로컬 스토리지 저장 실패:', e);
+                // 로컬 스토리지 저장 실패 시 메모리에 저장
+                window.tempSession = session;
+            }
+            
+            Security.session = session;
+            
+            // 로그인 모달 숨기기
+            document.getElementById('loginModal').style.display = 'none';
+            
+            // 메인 컨텐츠 표시
+            document.querySelector('main').style.display = 'block';
+            
+            // 로그 기록
+            logActivity('login', `사용자 ${username} 로그인`);
+            
+            // 모니터링 시작
+            if (typeof startMonitoring === 'function') {
+                startMonitoring();
+            }
+            
+            // 통계 초기화
+            if (typeof initStatistics === 'function') {
+                initStatistics();
+            }
+            
+            return true;
+        }
+        
+        // 로그인 실패
+        showMessage('로그인 실패: 사용자명 또는 비밀번호가 올바르지 않습니다.', 'error');
+        return false;
+    } catch (error) {
+        console.error('로그인 중 오류 발생:', error);
+        showMessage('로그인 중 오류가 발생했습니다.', 'error');
         return false;
     }
-    
-    const user = db.users.find(u => u.username === username && u.password === password);
-    console.log('찾은 사용자:', user); // 디버깅용
-    
-    if (user) {
-        // 로그인 성공
-        Security.session = {
-            token: generateToken(),
-            expires: Date.now() + Security.config.sessionTimeout,
-            user: {
-                id: user.id,
-                username: user.username,
-                role: user.role
-            }
-        };
-        
-        // 세션 저장
-        localStorage.setItem('session', JSON.stringify(Security.session));
-        
-        // 로그인 모달 숨기기
-        document.getElementById('loginModal').style.display = 'none';
-        
-        // 메인 컨텐츠 표시
-        document.querySelector('main').style.display = 'block';
-        
-        // 로그 기록
-        logActivity('login', `사용자 ${username} 로그인`);
-        
-        // 모니터링 시작
-        if (typeof startMonitoring === 'function') {
-            startMonitoring();
-        }
-        
-        // 통계 초기화
-        if (typeof initStatistics === 'function') {
-            initStatistics();
-        }
-        
-        return true;
-    }
-    
-    // 로그인 실패
-    showMessage('로그인 실패: 사용자명 또는 비밀번호가 올바르지 않습니다.', 'error');
-    return false;
 }
 
 // 로그인 폼 이벤트 리스너
@@ -158,16 +172,30 @@ function generateToken() {
 
 // 세션 유효성 체크
 function checkSession() {
-    if (!Security.session || !Security.session.token || !Security.session.expires) {
+    try {
+        if (!Security.session) {
+            const savedSession = localStorage.getItem('session');
+            if (savedSession) {
+                Security.session = JSON.parse(savedSession);
+            } else if (window.tempSession) {
+                Security.session = window.tempSession;
+            }
+        }
+        
+        if (!Security.session || !Security.session.token || !Security.session.expires) {
+            return false;
+        }
+        
+        if (Security.session.expires < Date.now()) {
+            logout();
+            return false;
+        }
+        
+        return true;
+    } catch (error) {
+        console.error('세션 체크 중 오류 발생:', error);
         return false;
     }
-    
-    if (new Date() > Security.session.expires) {
-        logout();
-        return false;
-    }
-    
-    return true;
 }
 
 // 비밀번호 유효성 검사
