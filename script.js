@@ -196,6 +196,32 @@ function deleteUser(userId) {
     }
 }
 
+// 로그아웃 함수
+function logout() {
+    // 세션 초기화
+    Security.session = null;
+    localStorage.removeItem('session');
+    
+    // 로그인 모달 표시
+    document.getElementById('loginModal').style.display = 'flex';
+    
+    // 메인 컨텐츠 숨기기
+    document.querySelector('main').style.display = 'none';
+    
+    // 모니터링 중지
+    if (typeof stopMonitoring === 'function') {
+        stopMonitoring();
+    }
+    
+    // 메시지 표시
+    showMessage('로그아웃되었습니다.', 'success');
+}
+
+// 로그아웃 버튼 이벤트 리스너
+document.getElementById('logoutBtn').addEventListener('click', function() {
+    logout();
+});
+
 // 이벤트 리스너 등록
 document.addEventListener('DOMContentLoaded', () => {
     initTheme();
